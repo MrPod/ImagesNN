@@ -78,14 +78,14 @@ class Layer:
     def improve(self, errors: np.array, learning_rate):
         # корректно работает только для функции sigmoid
         weights_deltas = errors * self.outs * (1 - self.outs) # столбец дельт весов для каждого выхода
-        QueueTh(funcs=(lambda: self.improveOne(i, weights_deltas[i], learning_rate) for i in range(len(errors))),
-                args=(
+        QueueTh(funcs=[lambda: self.improveOne(i, weights_deltas[i], learning_rate) for i in range(len(errors))],
+                args=[
                     tuple() for i in range(len(errors))
-                ),
+                ],
                 nThreads=self.nThreads
         ).start()
         # запускается черырехпоточная обработка указанных функций с указанными аргументами
 
 
-        return self.weights @ weights_deltas # столбец ошибок предыдущих нейронов
+        return weights_deltas.dot(self.weights) # столбец ошибок предыдущих нейронов
 

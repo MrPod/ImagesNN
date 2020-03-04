@@ -19,13 +19,13 @@ class QueueTh:
         self.threads = deque([ th.Thread(target=self.funcs[i], args=self.args[i])
                          for i in range(self.n) ])
 
-        [self.threads[i].start() for i in range(self.n)]
+        self.executing = [self.threads.pop().start() for i in range(self.n)]
 
         self.control()
 
     def control(self):
         counter = 0
-        while self.n:
+        while len(self.threads):
             while counter < self.n:
                 counter += 1
                 thr = self.threads.pop()
@@ -34,6 +34,6 @@ class QueueTh:
                 self.executing.append(thr)
 
             for thread in self.executing:
-                if not thread.isAlive():
+                if not thread.is_alive():
                     self.executing.remove(thread)
                     counter -= 1

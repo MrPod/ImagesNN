@@ -1,49 +1,44 @@
-from PIL import Image, ImageFilter
-
-
-Primitive = lambda size, image: image.convert('L').point(lambda a: 255 * (a > 230), mode='1').resize((size, size))
+import numpy as np
+import cv2
+import os
+from typing import Optional, Tuple, Union
 
 
 class PicHandler:
 
-    def __init__(self, name):
-        self.name = name
-        self.image = Image.open(f'{self.name}.png')
-        self.width, self.height = self.image.size
+    def __init__(self, o : Union[str, np.ndarray], path='images/'):
+        if isinstance(o, str):
+            s = lambda a: a.split('.', 1)
+            self.name = str(*filter(lambda a: [s(a)[0]==s(o)[0], a==o][len(s(o))>1], {*os.listdir(path)}))
+
+            if not self.name:
+                raise ValueError(f'there is no image {o} in the directory {path}')
+            img=cv2.imread(f'{path}{self.name}')
+        else:
+            self.name='.'
+            img=o
+
+        self.img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # size = Tuple[int, int]
+    resize = lambda self, size: cv2.resize(self.img, size, [cv2.INTER_AREA, cv2.INTER_CUBIC][size < self.img.shape])
 
 
-    def Alter(self, size):
-        altered = self.image.filter(ImageFilter.GaussianBlur(10))
-        self.image = Primitive(size, altered)
-        self.width, self.height = self.image.size
-        self.image.save(f'{self.name} altered.jpg')
+    def alter(self):
+        self.img = cv2.medianBlur(cv2.adaptiveThreshold(self.img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 75, 6), 3)
 
 
-    Show = lambda self: self.image.show()
+    _show = lambda self,n=None,i=None: [cv2.imshow(['_',self.name][n is None],[i,self.img][i is None]),cv2.waitKey(0),cv2.destroyAllWindows()]
 
 
-    def BlocksOfPixels(self, side):
-
-        block_amount = int(self.height / side)
-        a = [[] * block_amount ** 2]
-
-        if block_amount != self.height / side:
-            raise Exception('blocks of a given size cannot be fully fit in the image')
-
-        for s in range(block_amount):
-            for k in range(block_amount):
-                for i in range(side):
-                    str = ''.join('10'[bool(self.image.getpixel((j + k * side, i + s * side)))] for j in range(side))
-                    a[k + s * block_amount].append(str)
-
-        return a
+    def blocksOfPixels(self, mode:Union[str,int]=None) -> np.ndarray:
+        if mode:
+            try:
+                mode = int(mode)
+            except (ValueError, TypeError):
+                raise Exception(f'"{mode}" cannot be converted to int')
+            return np.vectorize(lambda _: min(_, mode))(self.img)
+        return self.img
 
 
-if __name__ == '__main__':
-    #pic = [PicHandler(f'{name}') for name in '0123456789']
-    pic = [PicHandler(f'{name}') for name in '012']
-
-    for p in pic:
-        p.Alter(30)
-        p.Show()
-        a = p.BlocksOfPixels(30)
+    vectorOfPixels = lambda self: self.img.flatten()

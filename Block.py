@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import *
 from collections import deque
 from Layer import *
+import pickle
 
 
 class Block:
@@ -50,7 +51,7 @@ class Block:
 
     def improve(self, errors: np.array, learning_rate):
         t = 0
-        for layer in self.layers:
+        for layer in reversed(self.layers):
             t = errors
             errors = layer.improve(errors, learning_rate)
 
@@ -65,3 +66,6 @@ class Block:
     def setNThreads(self, nth: int):
         for lay in self.layers:
             lay.setNThreads(nth)
+
+    def save(self, filename: str, i):
+        pass

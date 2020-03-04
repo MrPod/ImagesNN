@@ -1,5 +1,5 @@
 from Block import *
-#import numpy as np
+import saving
 
 
 def interpretRes(res: np.array):
@@ -36,6 +36,12 @@ class NeurNet:
     def improve(self, errors, learning_rate):
         self.last.improve(errors, learning_rate)
 
+    def save(self, filename: str ='default'):
+        saving.saveObj(self, filename + '.nn')
+
+    def load(self, filename: str ='default'):
+        nn = saving.loadObj(filename + '.nn')
+        self.first, self.last, self.ins = nn.first, nn.last, nn.ins
 
     def stopRes(self):
         pass
