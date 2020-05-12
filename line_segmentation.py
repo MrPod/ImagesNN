@@ -39,7 +39,7 @@ class Line:
                 i = j
             if i == 1500:
                 break
-        (_, width, _) = img.shape
+        _, width = img.shape[:2]
         lines_y = []
         top = 0
         bottom = 0
