@@ -117,7 +117,7 @@ def unite_components(components: List[List[int]], pos_table: List[Tuple[int, int
             c_other = components[j]
             #pos_other = find_component_position(c_other, pos_table)
             '''if distance(pos, pos_other) <= max_dist and i != j:'''
-            if components_near(c, c_other, pos_table):
+            if components_near(c, c_other, pos_table, max_dist):
                 to_unite[i].append(j)
 
     comps = find_connected_components(to_unite)
@@ -141,8 +141,8 @@ def create_segment_matrix(img_matrix: np.ndarray, pos: Position, component: List
 
 class Parser:
     MIN_SPACE_TEXT = 60
-    MIN_SPACE_FORMULA = 40
-    MIN_COMPONENT_SIZE = 20
+    MIN_SPACE_FORMULA = 3
+    MIN_COMPONENT_SIZE = 40
     @staticmethod
     def divBlocks(img_name: str, path: str ='D:\\Project\\', math: bool =True) -> List[TextBlock]:
         # math -- режим математических формул -> миним. расст. между разными блоками min_dist = 2
@@ -174,7 +174,8 @@ class Parser:
         for comp in connected_components:
             position = find_component_position(comp, table)
 
-            pic_handler = PicHandler(create_segment_matrix(img_matrix, position, comp, table))
+            sm = create_segment_matrix(img_matrix, position, comp, table)
+            pic_handler = PicHandler(np.full_like(sm, 255) - 255 * sm)
 
             position.x, position.y = position.y, position.x
             position.w, position.h = position.h, position.w
@@ -184,8 +185,93 @@ class Parser:
 
         return text_blocks
 
+    @staticmethod
+    def line_segmentation(img: np.ndarray) -> List[TextBlock]:
+        empty = True
+        v_borders = []
+        top = 0
+
+        for i in range(len(img)):
+            if empty and img[i].any():
+                # пустые строки закончились
+                top = i
+                empty = False
+
+            elif not empty and img[i].any() == False:
+                # в данной строке все нули, и до данного момента были непустые строки
+                empty = True
+                v_borders.append((top, i))
+
+
+        res = []
+        for top, bottom in v_borders:
+            if (top, bottom) == (0, 0):
+                continue
+
+            m = img[top: bottom]
+            if not len(m):
+                continue
+            ph = PicHandler(m)
+            res.append(TextBlock(Position(0, top, len(img[0]), len(m)), ph))
+
+        return res
+
+    @staticmethod
+    def word_segmentation(img: np.ndarray, y: int, min_space: int =1) -> List[TextBlock]:
+        # min_space -- минимальный размер пробела
+        empty = True
+        h_borders = []
+        left = 0
+
+        for i in range(len(img[0])):
+            if empty and img[: , i].any():
+                # пустые столбцы закончились
+                left = i
+                empty = False
+
+            elif not empty and img[: , i].any() == False and (i - left >= min_space):
+                # в данной строке все нули, и до данного момента были непустые строки
+                empty = True
+                h_borders.append((left, i))
+
+        res = []
+        for left, right in h_borders:
+            if (left, right) == (0, 0):
+                continue
+
+            m = img[: , left: right]
+            if not len(m):
+                continue
+            ph = PicHandler(m)
+            res.append(TextBlock(Position(left, y, len(m[0]), len(m)), ph))
+
+        return res
+
+
+def test_sementation(img_name):
+    p = PicHandler(img_name, path='D:\\Project\\')
+    p.alter()
+    p._show()
+    bs = Parser.line_segmentation(p.blocksOfPixels())
+    for b in bs:
+        print(b.getPos())
+        #PicHandler(np.full_like(b.getImg().img, 255) - 255 * b.getImg().img)._show()
+
+    line = bs[0]
+    words = Parser.word_segmentation(line.getImg().img, line.getPos().top(), min_space=1)
+    for word in words:
+        print(word.getPos())
+        PicHandler(np.full_like(word.getImg().img, 255) - 255 * word.getImg().img)._show()
+
+
+def main(img_name):
+    bs = Parser().divBlocks(img_name, math=True)
+    for b in bs:
+        print(b.getPos())
+        PicHandler(np.full_like(b.getImg().img, 255) - 255 * b.getImg().img)._show()
 
 if __name__ == '__main__':
-    bs = Parser().divBlocks("f2.jpg", math=True)
-    for b in bs:
-        PicHandler(np.full_like(b.getImg().img, 255) - 255 * b.getImg().img)._show()
+    test_sementation('r1.jpg')
+    '''for i in range(10):
+        img_name = 'f'+str(i)+'.jpg'
+        main(img_name)'''
