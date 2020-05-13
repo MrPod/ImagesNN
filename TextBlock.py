@@ -9,6 +9,8 @@ class TextBlock:
         self.position = position
         self.pic_handler = pic_handler
 
+    __repr__ = __str__ = lambda self: f'{self.position} {self.pic_handler}'
+
     def getPos(self) -> Position:
         return self.position
 
