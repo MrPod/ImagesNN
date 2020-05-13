@@ -52,7 +52,7 @@ class Parser:
 
     
 
-    def words_segmentation(line_pic_handler:PicHandler, minArea = 300) -> List[PicHandler]:
+    def words_segmentation(line_pic_handler:PicHandler, minArea = 300)
         SIZE = 40
 
         image = line_pic_handler.img
@@ -62,7 +62,7 @@ class Parser:
         gradY = cv2.Sobel(gray, ddepth = cv2.CV_32F, dx = 0, dy = 1, ksize = -1)
         gradient = cv2.subtract(gradX, gradY)
         gradient = cv2.convertScaleAbs(gradient)
-
+"""
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (27, 21))
         closed = cv2.morphologyEx(gradient, cv2.MORPH_CLOSE, kernel)
         closed = cv2.erode(closed, None, iterations = 4)
@@ -85,8 +85,24 @@ class Parser:
             word.resize(word.img, (SIZE, SIZE))
             words.append(word)
         return words
-                            
-
+ """
+        kernel = cv2.getStructuringElement(cv2.MORPH_ERODE, (21, 17))  
+        closed = cv2.morphologyEx(gradient, cv2.MORPH_CLOSE, kernel)
+        #closed = cv2.erode(closed, None, iterations = 4)
+        closed = cv2.dilate(closed, None, iterations = 2)
+        (components, _) = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        res = []
+        for c in components:
+            if cv2.contourArea(c) < minArea:
+                continue
+            currBox = cv2.boundingRect(c) 
+            (x, y, w, h) = currBox   
+            currImg = image[y:y+h, x:x+w]
+            res.append((currBox, currImg))
+            print(cv2.contourArea(c))
+        #return closed
+        #Вернется список, отсортированный по х, из ( (x, y, width, height), img ) Тип координаты и слово или компонент связности. 
+        return sorted(res, key=lambda entry:entry[0][0])
 
 
 

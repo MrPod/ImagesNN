@@ -13,10 +13,4 @@ class TextBlock:
         return self.position
 
     def getImg(self) -> PicHandler:
-        """
-        Мб потребует правок
-        """
-        #FixMe
-        pos = self.position
-        box = (pos.x, pos.y, pos.x + pos.width, pos.y - pos.height)
-        return PicHandler(np.array(self.pic_handler.img.crop(box)))
+        return self.pic_handler
