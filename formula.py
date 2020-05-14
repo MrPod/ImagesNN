@@ -23,16 +23,23 @@ class Formula:
     LOW = 'low'
     HAS_LIMITS = {'\\frac', '\\int', '\\sum'}
     INF = 9999
-    CENTER_DY = 0.65
+    CENTER_DY = 0.6
     NOSYMB = {'\\frac'}
     LIMIT_DY = 0.6
+    LIMIT_DX = 0.5
+    EQUAL_K = 2.5
 
+    UNKNOWN = '{?}'
+    EMPTY_BLOCK = ElemBlock(UNKNOWN, Position(0, 0, 0, 0))
 
     def __init__(self, elemBlocks: List[ElemBlock]):
         self.subformulas = dict()
         limits, elemBlocks = self.recognizeLimits(elemBlocks)
         self.recognize_structure(elemBlocks, limits)
-        self.pos = elemBlocks[0].getPos()
+        if len(elemBlocks):
+            self.pos = elemBlocks[0].getPos()
+        else:
+            self.pos = Formula.EMPTY_BLOCK.getPos()
 
     def recognizeLimits(self, elemBlocks: List[ElemBlock]) \
             -> Tuple[List[Tuple[ElemBlock, Dict[Union[Formula.TOP, Formula.LOW], ElemBlock]]], List[ElemBlock]]:
@@ -62,6 +69,9 @@ class Formula:
     @staticmethod
     def uniteBlocks(blocks) -> ElemBlock:
         # метод создает tex-код для данной формулы
+        if len(blocks) == 0:
+            return Formula.EMPTY_BLOCK
+
         Formula.sortBlocks(blocks)
         content = ''
         yLine = blocks[0].getPos().center().y
@@ -92,18 +102,20 @@ class Formula:
         def findBorders(block: ElemBlock, elemBlocks: List[ElemBlock]) -> Tuple[int, int]:
             # функция находит левую и правую границы зоны, отводимой для записи пределов block
             limitBlocks = [b for b in elemBlocks if Formula.hasLimits(b) and b != block]
-            left, right = 0, Formula.INF
+            d = max(block.getPos().w / 2, Formula.LIMIT_DX * block.getPos().h)
+            left, right = block.getPos().center().x - d, block.getPos().center().x + d
+            mleft, mright = 0, Formula.INF
 
             for b in limitBlocks:
                 pos = b.getPos()
-                if pos.left() > left:
-                    left = pos.left()
-                elif pos.right() < right:
-                    right = pos.right()
+                if pos.left() > mleft and pos.left() < block.getPos().left():
+                    mleft = pos.left()
+                elif pos.right() < mright and pos.right() > block.getPos().right():
+                    mright = pos.right()
 
             bl, br = block.getPos().left(), block.getPos().right()
 
-            return bl - (bl - left) / 2, br + (right - br) / 2
+            return max(bl - (bl - mleft) / 2, left), min(br + (mright - br) / 2, right)
 
         res = []
         if side == Formula.TOP:
@@ -115,16 +127,24 @@ class Formula:
 
         bl, br = findBorders(block, elemBlocks)
         for b in elemBlocks:
-            if b != block and bl < b.getPos().left() and br > b.getPos().right():
+            if b != block and bl < b.getPos().right() and br > b.getPos().left():
                 if Formula.inDirection(yLine + sign * Formula.LIMIT_DY * b.getPos().h, b, side):
                     res.append(b)
 
         return res
 
     @staticmethod
+    def isEqual(block: ElemBlock) -> bool:
+        return block.getOutput() == '='
+
+    @staticmethod
     def onLine(yLine: int, block: ElemBlock) -> bool:
         cy = block.getPos().center().y
-        return abs(cy - yLine) / block.getPos().h < Formula.CENTER_DY
+        if Formula.isEqual(block):
+            h = Formula.EQUAL_K * block.getPos().h
+        else:
+            h = block.getPos().h
+        return abs(cy - yLine) / h < Formula.CENTER_DY
 
     @staticmethod
     def inDirection(yLine: int, block: ElemBlock, side: Union[Formula.TOP, Formula.LOW]) -> bool:
@@ -161,6 +181,8 @@ class Formula:
         # метод создает tex-код для данной формулы
         Formula.sortBlocks(elemBlocks)
         self.texCode = ''
+        if len(elemBlocks) == 0:
+            return
         yLine = elemBlocks[0].getPos().center().y
 
         for block in elemBlocks:
@@ -174,7 +196,6 @@ class Formula:
                 lims = Formula.findLimits(block, limits)
 
                 symb = not Formula.noSymb(block.getOutput())
-
 
                 self.texCode += '^' * symb + lims[Formula.TOP].getOutput()
 
