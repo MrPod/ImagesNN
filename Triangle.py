@@ -10,7 +10,7 @@ from Position import Position
 
 
 __all__ = ['getRectangles']
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 def rotate(image, angle, center=None, scale=1.0):
@@ -32,11 +32,14 @@ def rotate(image, angle, center=None, scale=1.0):
 
 def getRectangles(pic : PicHandler) -> List[TextBlock]:
 
-    # PicHandler trap
-    pic.img = ~pic.img
     bw = apply_threshold(pic.img, bradley_roth_threshold(pic.img))
 
-    contours, hierarchy = cv2.findContours(bw, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE) # RETR_EXTERNAL
+    # the image stored in PicHandler is in GRAY colors, hence colored rects are also in GRAY colors and not visible,
+    # hence we need to convert the `PicHandler.img` into RGB and paint the rects on it
+
+    # img = cv2.cvtColor(pic.img.copy(), cv2.COLOR_GRAY2RGB)
+
+    contours, hierarchy = cv2.findContours(bw, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 
     co = []
 
@@ -62,9 +65,13 @@ def getRectangles(pic : PicHandler) -> List[TextBlock]:
             hh, _h = _h, hh
 
         x,y,w,h = cv2.boundingRect(box)
+        pos = Position(x,y,w,h)
         rect = pic.img[y:y+h, x:x+w]
-        #cv2.rectangle(pic.img, (x,y), (x+w, y+h), (0, 255, 0), 2)
-        #cv2.drawContours(pic.img, [box], 0, (0, 0, 255), 2)
+
+        # drawing rects on colored `PicHandler.img`
+
+        # cv2.rectangle(img, (x,y), (x+w, y+h), (0, 255, 0), 2)
+        # cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
 
         x,y = d[0]-c[0],d[1]-c[1]
         angle = eval(f'{"-"*(x<0)}{np.degrees(np.arcsin([min(abs(x),abs(y)) / hy(c,d)])[0])}')
@@ -72,21 +79,21 @@ def getRectangles(pic : PicHandler) -> List[TextBlock]:
         h,w =n_rec.shape[:2]
         nn_rec = n_rec[h//2-int(hh//2):h//2+int(hh//2), w//2-int(_h//2):w//2+int(_h//2)]
 
-        rects.append(TextBlock(Position(x, y, w, h), PicHandler(nn_rec)))
-        
-        #cv2.imwrite(f'images/____{n}{pic.name}', nn_rec)
+        rects.append(TextBlock(pos, PicHandler(nn_rec)))
 
+        # save the rect
+        # cv2.imwrite(f'images/____{n}{pic.name}', nn_rec)
+
+    # save the colored `PicHandler.img`
+    # cv2.imwrite(f'images/!{pic.name}', img)
     return rects
-
 
 '''
 Usage:
 
 if __name__ == '__main__':
-    c = PicHandler('formulas_final')
+    c = PicHandler('test_2')
     rects = getRectangles(c)
 
-    print(len(rects),rects)
-    
+    print(rects)
 '''
-
