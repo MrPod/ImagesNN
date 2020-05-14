@@ -77,13 +77,24 @@ class Formula:
         yLine = blocks[0].getPos().center().y
         position = blocks[0].getPos()
 
+        last_direct = 0
+
         for block in blocks:
             position = position.bounding_rect(block.getPos())
             direct = Formula.findDirection(yLine, block)
             if direct == 0:
                 yLine = block.getPos().center().y
 
-            content += f'{["","^","_"][direct]}{block.getOutput()}' # 0 - empty; 1 - ^; -1 - _
+
+            if direct == 0 and last_direct:
+                content += '}'
+
+            if direct == last_direct:
+                content += block.getOutput()
+            else:
+                content += f'{["","^{","_{"][direct]}{block.getOutput()}' # 0 - empty; 1 - ^; -1 - _
+
+            last_direct = direct
 
         content = "{" + content + "}"
 
@@ -184,6 +195,7 @@ class Formula:
         if len(elemBlocks) == 0:
             return
         yLine = elemBlocks[0].getPos().center().y
+        last_direct = 0
 
         for block in elemBlocks:
             direct = Formula.findDirection(yLine, block)
@@ -202,8 +214,17 @@ class Formula:
                 self.texCode += '_' * symb + lims[Formula.LOW].getOutput()
 
             else:
-                self.texCode += f'{["","^","_"][direct]}{block.getOutput()}' # 0 - empty; 1 - ^; -1 - _
+                if direct == 0 and last_direct or direct and last_direct and direct != last_direct:
+                    self.texCode += '}'
 
+                if direct == last_direct:
+                    self.texCode += block.getOutput()
+                else:
+                    self.texCode += f'{["","^{","_{"][direct]}{block.getOutput()}' # 0 - empty; 1 - ^; -1 - _
+
+            last_direct = direct
+
+        self.texCode += '}' * (self.texCode.count('{') - self.texCode.count('}'))
 
     def getFormula(self) -> ElemBlock(Math, Position) :
         '''
