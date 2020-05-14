@@ -37,7 +37,7 @@ def getRectangles(pic : PicHandler) -> List[TextBlock]:
     # the image stored in PicHandler is in GRAY colors, hence colored rects are also in GRAY colors and not visible,
     # hence we need to convert the `PicHandler.img` into RGB and paint the rects on it
 
-    # img = cv2.cvtColor(pic.img.copy(), cv2.COLOR_GRAY2RGB)
+    img = cv2.cvtColor(pic.img.copy(), cv2.COLOR_GRAY2RGB)
 
     contours, hierarchy = cv2.findContours(bw, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -70,8 +70,8 @@ def getRectangles(pic : PicHandler) -> List[TextBlock]:
 
         # drawing rects on colored `PicHandler.img`
 
-        # cv2.rectangle(img, (x,y), (x+w, y+h), (0, 255, 0), 2)
-        # cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+        cv2.rectangle(img, (x,y), (x+w, y+h), (0, 255, 0), 2)
+        cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
 
         x,y = d[0]-c[0],d[1]-c[1]
         angle = eval(f'{"-"*(x<0)}{np.degrees(np.arcsin([min(abs(x),abs(y)) / hy(c,d)])[0])}')
@@ -82,10 +82,10 @@ def getRectangles(pic : PicHandler) -> List[TextBlock]:
         rects.append(TextBlock(pos, PicHandler(nn_rec)))
 
         # save the rect
-        # cv2.imwrite(f'images/____{n}{pic.name}', nn_rec)
+        cv2.imwrite(f'images/!{n}{pic.name}', nn_rec)
 
     # save the colored `PicHandler.img`
-    # cv2.imwrite(f'images/!{pic.name}', img)
+    cv2.imwrite(f'images/!{pic.name}', img)
     return rects
 
 '''
