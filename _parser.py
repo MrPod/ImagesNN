@@ -112,12 +112,9 @@ def unite_components(components: List[List[int]], pos_table: List[Tuple[int, int
 
     for i in range(len(components)):
         c = components[i]
-        #pos = find_component_position(c, pos_table)
         for j in range(len(components)):
             c_other = components[j]
-            #pos_other = find_component_position(c_other, pos_table)
-            '''if distance(pos, pos_other) <= max_dist and i != j:'''
-            if components_near(c, c_other, pos_table):
+            if components_near(c, c_other, pos_table, max_dist):
                 to_unite[i].append(j)
 
     comps = find_connected_components(to_unite)
@@ -138,11 +135,35 @@ def create_segment_matrix(img_matrix: np.ndarray, pos: Position, component: List
 
     return img_matrix[pos.x: pos.x + pos.w + 1, pos.y: pos.y + pos.h + 1]
 
+def unite_equal(connected_components: List[List[int]], table: List[Tuple[int, int]]) -> List[List[int]]:
+    deleted = set()
+    l = len(connected_components)
+    i = 0
+    while i < l:
+        if i in deleted:
+            i += 1
+            continue
+        j = i + 1
+        while j < l:
+            if j in deleted:
+                j += 1
+                continue
+            p1, p2 = find_component_position(connected_components[i], table), find_component_position(connected_components[j], table)
+            if Parser.is_equals_sign(p1, p2):
+                connected_components[i] += connected_components.pop(j)
+                deleted.add(j)
+                j -= 1
+                l -= 1
+
+            j += 1
+        i += 1
+
+    return connected_components
 
 class Parser:
     MIN_SPACE_TEXT = 60
-    MIN_SPACE_FORMULA = 40
-    MIN_COMPONENT_SIZE = 20
+    MIN_SPACE_FORMULA = 3
+    MIN_COMPONENT_SIZE = 40
     @staticmethod
     def divBlocks(img_name: str, path: str ='D:\\Project\\', math: bool =True) -> List[TextBlock]:
         # math -- режим математических формул -> миним. расст. между разными блоками min_dist = 2
@@ -170,11 +191,13 @@ class Parser:
                 i += 1
 
         connected_components = unite_components(connected_components, table, min_dist-1)
+        connected_components = unite_equal(connected_components, table)
 
         for comp in connected_components:
             position = find_component_position(comp, table)
 
-            pic_handler = PicHandler(create_segment_matrix(img_matrix, position, comp, table))
+            sm = create_segment_matrix(img_matrix, position, comp, table)
+            pic_handler = PicHandler(np.full_like(sm, 255) - 255 * sm)
 
             position.x, position.y = position.y, position.x
             position.w, position.h = position.h, position.w
@@ -184,8 +207,100 @@ class Parser:
 
         return text_blocks
 
+    @staticmethod
+    def is_equals_sign(p1, p2):
+        if p1.h / p1.w > 2 and p2.h / p2.w > 2 \
+                and (p1.y <= p2.y < p1.y + p1.h or p2.y <= p1.y < p2.y + p2.h) \
+                and abs(p1.h - p2.h) < 0.4 * (p1.h + p2.h) \
+                and abs(p1.x - p2.x) < 2 * min(p1.h, p2.h):
+            return True
+        return False
+
+    @staticmethod
+    def line_segmentation(img: np.ndarray) -> List[TextBlock]:
+        empty = True
+        v_borders = []
+        top = 0
+
+        for i in range(len(img)):
+            if empty and img[i].any():
+                # пустые строки закончились
+                top = i
+                empty = False
+
+            elif not empty and img[i].any() == False:
+                # в данной строке все нули, и до данного момента были непустые строки
+                empty = True
+                v_borders.append((top, i))
+
+
+        res = []
+        for top, bottom in v_borders:
+            if (top, bottom) == (0, 0):
+                continue
+
+            m = img[top: bottom]
+            if not len(m):
+                continue
+            ph = PicHandler(np.full_like(m, 255) - 255 * m)
+            res.append(TextBlock(Position(0, top, len(img[0]), len(m)), ph))
+
+        return res
+
+    @staticmethod
+    def word_segmentation(img: np.ndarray, y: int, min_space: int =1) -> List[TextBlock]:
+        # min_space -- минимальный размер пробела
+        empty = True
+        h_borders = []
+        left = 0
+        last_not_empty = -1
+
+        for i in range(len(img[0])):
+            if img[:, i].any():
+                if empty:
+                    left = i
+                    empty = False
+                last_not_empty = i
+            elif not empty and (i - last_not_empty >= min_space):
+                empty = True
+                h_borders.append((left, last_not_empty + 1))
+
+        res = []
+        for left, right in h_borders:
+            if (left, right) == (0, 0):
+                continue
+
+            m = img[: , left: right]
+            if not len(m):
+                continue
+            ph = PicHandler(np.full_like(m, 255) - 255 * m)
+            res.append(TextBlock(Position(left, y, len(m[0]), len(m)), ph))
+
+        return res
+
+
+def test_sementation(img_name):
+    p = PicHandler(img_name, path='D:\\Project\\')
+    p.alter()
+    p._show()
+    bs = Parser.line_segmentation(p.blocksOfPixels())
+    line = None
+    for b in bs:
+        print(b.getPos())
+        if b.getPos().h > 10 and line == None:
+            words = Parser.word_segmentation(b.getImg().blocksOfPixels(), b.getPos().top(), min_space=15)
+            for word in words:
+                word.getImg()._show()
+
+
+def main(img_name):
+    bs = Parser().divBlocks(img_name, math=True)
+    for b in bs:
+        print(b.getPos())
+        b.getImg()._show()
 
 if __name__ == '__main__':
-    bs = Parser().divBlocks("f2.jpg", math=True)
-    for b in bs:
-        PicHandler(np.full_like(b.getImg().img, 255) - 255 * b.getImg().img)._show()
+    '''test_sementation('formulas_final.jpg')'''
+    for i in range(10):
+        img_name = 'f'+str(i)+'.jpg'
+        main(img_name)
