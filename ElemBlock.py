@@ -1,8 +1,11 @@
 class ElemBlock:
-
-    def __init__(self, text, pos):
+    def __init__(self, text, pos, ok: bool =True):
         self.text=text
         self.pos=pos
+        self.ok = ok
+
+    def isOk(self) -> bool:
+        return self.ok
 
     def getOutput(self):
         return self.text

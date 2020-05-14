@@ -114,6 +114,7 @@ def unite_components(components: List[List[int]], pos_table: List[Tuple[int, int
         c = components[i]
         for j in range(len(components)):
             c_other = components[j]
+
             if components_near(c, c_other, pos_table, max_dist):
                 to_unite[i].append(j)
 
@@ -217,6 +218,7 @@ class Parser:
         return False
 
     @staticmethod
+
     def line_segmentation(img: np.ndarray) -> List[TextBlock]:
         empty = True
         v_borders = []
@@ -243,6 +245,7 @@ class Parser:
             if not len(m):
                 continue
             ph = PicHandler(np.full_like(m, 255) - 255 * m)
+
             res.append(TextBlock(Position(0, top, len(img[0]), len(m)), ph))
 
         return res
@@ -265,6 +268,7 @@ class Parser:
                 empty = True
                 h_borders.append((left, last_not_empty + 1))
 
+
         res = []
         for left, right in h_borders:
             if (left, right) == (0, 0):
@@ -273,7 +277,9 @@ class Parser:
             m = img[: , left: right]
             if not len(m):
                 continue
+  
             ph = PicHandler(np.full_like(m, 255) - 255 * m)
+
             res.append(TextBlock(Position(left, y, len(m[0]), len(m)), ph))
 
         return res
@@ -293,10 +299,12 @@ def test_sementation(img_name):
                 word.getImg()._show()
 
 
+
 def main(img_name):
     bs = Parser().divBlocks(img_name, math=True)
     for b in bs:
         print(b.getPos())
+
         b.getImg()._show()
 
 if __name__ == '__main__':
