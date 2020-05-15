@@ -7,7 +7,8 @@
 from __future__ import annotations
 from typing import *
 from ElemBlock import ElemBlock
-from Position import Position
+from pylatex import Math, NoEscape
+from position import Position
 
 
 FRAC = '\\frac'
@@ -29,7 +30,7 @@ class Formula:
     EQUAL_K = 2.5
 
     UNKNOWN = '{?}'
-    EMPTY_BLOCK = ElemBlock(UNKNOWN, Position(0, 0, 0, 0))
+    EMPTY_BLOCK = ElemBlock(UNKNOWN, Position(0, 0, 0, 0), ok=False)
 
     def __init__(self, elemBlocks: List[ElemBlock]):
         self.subformulas = dict()
@@ -230,5 +231,6 @@ class Formula:
         The function to return the results
         :return: ElemBlock with Math instance, which represents the obtained formula
         '''
+        if not self.texCode:
+            return ElemBlock('', self.pos, ok=False)
         return ElemBlock(f'${self.texCode}$', self.pos)
-

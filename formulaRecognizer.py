@@ -8,8 +8,9 @@ from PicHandler import PicHandler
 from ElemBlock import ElemBlock
 from formula import Formula
 import mask
-from _my_parser import Parser
+from my_parser import Parser
 from decoder import math_classes
+from position import Position
 
 path = 'C:\\Users\\Юзверь\\PycharmProjects\\math_formulas\\m_math1_1.ldb'
 baretsky_path = 'C:\\Users\\Юзверь\\PycharmProjects\\math_formulas\\math_baretksy.ldb'
@@ -36,18 +37,22 @@ class FormulaRecognizer:
         return ElemBlock(res, textBlock.position)
 
     @staticmethod
-    def read(img: Union[str, PicHandler], path: str='D:\\Project\\'):
+    def read(img: Union[str, PicHandler], path: str='D:\\Project\\') -> ElemBlock:
         if isinstance(img, str):
             ph = PicHandler(img, path=path)
         else:
             ph = img
-        blocks = Parser().divBlocks(img, sensivity=4, math=True)
-
+        blocks = Parser.parse(ph.blocksOfPixels(), sensivity=4, merge='math')
+        Parser.swap_coordinates(blocks)
         elemBlocks = [FormulaRecognizer.recBlock(block) for block in blocks]
 
-        f = Formula(elemBlocks)
+        try:
+            f = Formula(elemBlocks)
+        except:
+            return ElemBlock('', Position(0, 0, 0, 0), ok=False)
         print(f.texCode)
-        ph._show()
+        #ph._show()
+        return f.getFormula()
 
 if __name__ == '__main__':
     FormulaRecognizer.read("strong_1_4.jpg", "D:\\Project\\")
