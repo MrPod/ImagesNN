@@ -7,8 +7,7 @@
 from __future__ import annotations
 from typing import *
 from ElemBlock import ElemBlock
-from pylatex import Math, NoEscape
-from position import Position
+from Position import Position
 
 
 FRAC = '\\frac'
@@ -226,9 +225,10 @@ class Formula:
 
         self.texCode += '}' * (self.texCode.count('{') - self.texCode.count('}'))
 
-    def getFormula(self) -> ElemBlock(Math, Position) :
+    def getFormula(self) -> ElemBlock(str, Position) :
         '''
         The function to return the results
         :return: ElemBlock with Math instance, which represents the obtained formula
         '''
-        return ElemBlock(Math(inline=True, data=[NoEscape(self.texCode)]), self.pos)
+        return ElemBlock(f'${self.texCode}$', self.pos)
+
