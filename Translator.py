@@ -28,6 +28,9 @@ class Translator:
         doc = Document('basic')
 
         doc.append(NoEscape(r'\noindent'))
+        
+        doc.append(NoEscape("\\newcommand{\err}[1]{\\textit{#1}}")) # !
+
 
         for block in self.blocks:
             doc.append(NoEscape(block.getOutput()+'\\\\'))
