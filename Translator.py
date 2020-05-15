@@ -14,7 +14,7 @@ class Translator:
     def __init__(self, blocks: List[ElemBlock]):
         blocks.sort(key=lambda _: attrgetter('y','x')(methodcaller('getPos')(_)))
         t, self.blocks = 0, []
-        e = lambda _: "".join(map(methodcaller("getOutput"), blocks[t:_]))
+        e = lambda _: " ".join(map(methodcaller("getOutput"), blocks[t:_]))
 
         for n, (f, s) in enumerate(zip(blocks, blocks[1:])):
             if t != n and (s.getPos().y - f.getPos().y) > Formula.LIMIT_DY*(f.getPos().h + s.getPos().h)//2:
