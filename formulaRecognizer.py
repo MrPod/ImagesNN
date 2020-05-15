@@ -1,3 +1,5 @@
+from typing import *
+
 import letter_db as ldb
 import numpy as np
 from TextBlock import TextBlock
@@ -34,9 +36,12 @@ class FormulaRecognizer:
         return ElemBlock(res, textBlock.position)
 
     @staticmethod
-    def read(imgName: str, path: str):
-        ph = PicHandler(imgName, path=path)
-        blocks = Parser().divBlocks(imgName, path='D:\\Project\\', sensivity=4, math=True)
+    def read(img: Union[str, PicHandler], path: str='D:\\Project\\'):
+        if isinstance(img, str):
+            ph = PicHandler(img, path=path)
+        else:
+            ph = img
+        blocks = Parser().divBlocks(img, sensivity=4, math=True)
 
         elemBlocks = [FormulaRecognizer.recBlock(block) for block in blocks]
 
@@ -45,9 +50,9 @@ class FormulaRecognizer:
         ph._show()
 
 if __name__ == '__main__':
-    #FormulaRecognizer.read("strong_1_1.jpg", "D:\\Project\\")
+    FormulaRecognizer.read("strong_1_4.jpg", "D:\\Project\\")
 
-    for n in range(10):
+    for n in range(2, 10):
         print("\nf" + str(n) + ".jpg:")
         FormulaRecognizer.read("f" + str(n)+".jpg", "D:\\Project\\")
     for n in '013':
